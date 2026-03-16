@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Lab 3: WebSockets Potentiometer</title>
+    <meta charset="UTF-8">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: Arial; text-align: center; background: #f4f4f4; }
+        .container { width: 80%; margin: auto; background: white; padding: 20px; border-radius: 10px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Моніторинг потенціометра</h2>
+        <canvas id="potChart"></canvas>
+    </div>
+
+    <script>
+        // Ініціалізація WebSocket [cite: 188]
+        const gateway = `ws://${window.location.hostname}/ws`;
+        let socket = new WebSocket(gateway);
+
+        // Налаштування графіка Chart.js [cite: 189]
+        const ctx = document.getElementById('potChart').getContext('2d');
+        const chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Значення ADC (0-4095)',
+                    data: [],
+                    borderColor: '#2ecc71',
+                    fill: false,
+                    tension: 0.1
+                }]
+            },
+            options: {
+                scales: { y: { beginAtZero: true, max: 4095 } }
+            }
+        });
+
+        // Обробка повідомлень [cite: 190, 191]
+        socket.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            const time = new Date().toLocaleTimeString();
+
+            // Додавання нової точки [cite: 193]
+            chart.data.labels.push(time);
+            chart.data.datasets[0].data.push(data.value);
+
+            // Ефект "рухомого вікна" (макс. 20 точок) [cite: 194, 203]
+            if (chart.data.labels.length > 20) {
+                chart.data.labels.shift();
+                chart.data.datasets[0].data.shift();
+            }
+
+            chart.update('none'); // Швидке оновлення без анімації [cite: 198]
+        };
+    </script>
+</body>
+</html>
